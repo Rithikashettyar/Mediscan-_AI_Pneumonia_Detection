@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 import numpy as np
 import cv2
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model # type: ignore
 import tensorflow as tf
 import os
 from datetime import datetime, timedelta
