@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediScan AI - Pneumonia Detection System</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #e2e8f0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-icon {
+      font-size: 2.5rem;
+    }
+
+    header p {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .upload-container {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      border-radius: 16px;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .upload-container.hidden {
+      display: none;
+    }
+
+    .upload-zone {
+      border: 2px dashed rgba(6, 182, 212, 0.4);
+      border-radius: 12px;
+      padding: 45px 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(14, 165, 233, 0.05));
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: rgba(6, 182, 212, 0.6);
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(14, 165, 233, 0.1));
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+    }
+
+    .file-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    .upload-zone h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #06b6d4;
+    }
+
+    .upload-zone p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+
+    .file-formats {
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: #06b6d4;
+      font-weight: 500;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 11px 26px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+      color: white;
+      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.1);
+      color: #cbd5e1;
+      border: 1.5px solid rgba(6, 182, 212, 0.2);
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(6, 182, 212, 0.08);
+      border-color: #06b6d4;
+      color: #06b6d4;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .preview-container {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      border-radius: 16px;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      display: none;
+      text-align: center;
+    }
+
+    .preview-container.active {
+      display: block;
+    }
+
+    .preview-label {
+      color: #06b6d4;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 16px;
+    }
+
+    .preview-image {
+      width: 100%;
+      max-width: 280px;
+      height: 280px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 2px solid rgba(6, 182, 212, 0.3);
+      box-shadow: 0 10px 30px rgba(6, 182, 212, 0.15);
+      margin: 0 auto 24px;
+      display: block;
+    }
+
+    .close-preview {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      width: 32px;
+      height: 32px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+      font-size: 1.3rem;
+      cursor: pointer;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      opacity: 0;
+    }
+
+    .preview-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .preview-wrapper:hover .close-preview {
+      opacity: 1;
+    }
+
+    .close-preview:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      border-radius: 16px;
+      padding: 36px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(6, 182, 212, 0.1);
+      max-width: 500px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      position: relative;
+      backdrop-filter: blur(10px);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.3s ease;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: #06b6d4;
+    }
+
+    .loading-state {
+      text-align: center;
+      display: none;
+      padding: 40px 20px;
+    }
+
+    .loading-state.active {
+      display: block;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 24px;
+      border: 3px solid rgba(6, 182, 212, 0.15);
+      border-top-color: #06b6d4;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-text {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 6px;
+    }
+
+    .loading-subtext {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .results-state {
+      display: none;
+      text-align: center;
+    }
+
+    .results-state.active {
+      display: block;
+    }
+
+    .result-icon {
+      font-size: 4rem;
+      margin-bottom: 12px;
+    }
+
+    .result-icon.success {
+      color: #10b981;
+    }
+
+    .result-icon.alert {
+      color: #ef4444;
+    }
+
+    .result-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .result-title.success {
+      color: #10b981;
+    }
+
+    .result-title.alert {
+      color: #ef4444;
+    }
+
+    .result-message {
+      background: rgba(6, 182, 212, 0.08);
+      border-left: 3px solid #06b6d4;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 20px 0;
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      text-align: left;
+    }
+
+    .confidence-box {
+      background: rgba(6, 182, 212, 0.08);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      padding: 18px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+
+    .confidence-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      color: #cbd5e1;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: rgba(71, 85, 105, 0.4);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #06b6d4, #0ea5e9);
+      transition: width 1s ease-out;
+      width: 0%;
+    }
+
+    .probability-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .prob-item {
+      background: rgba(6, 182, 212, 0.08);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      padding: 16px;
+      border-radius: 8px;
+    }
+
+    .prob-label {
+      color: #94a3b8;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+      margin-bottom: 6px;
+    }
+
+    .prob-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #0ea5e9;
+    }
+
+    .timestamp {
+      color: #64748b;
+      font-size: 0.8rem;
+      margin-top: 16px;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .result-actions .btn {
+      flex: 1;
+    }
+
+    .error-box {
+      background: rgba(239, 68, 68, 0.08);
+      border-left: 3px solid #ef4444;
+      color: #fca5a5;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 14px;
+      font-size: 0.85rem;
+      display: none;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .error-box.active {
+      display: block;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 640px) {
+      header h1 {
+        font-size: 1.7rem;
+      }
+
+      .upload-container,
+      .preview-container {
+        padding: 28px;
+      }
+
+      .upload-zone {
+        padding: 32px 20px;
+      }
+
+      .modal-content {
+        padding: 28px;
+      }
+
+      .probability-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .result-actions {
+        flex-direction: column;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        <span class="logo-icon">🔬</span>
+        <span>MediScan AI</span>
+      </h1>
+      <p>Advanced Pneumonia Detection System</p>
+    </header>
+
+    <div class="upload-container" id="uploadContainer">
+      <form id="uploadForm">
+        <div class="upload-zone" id="uploadZone">
+          <div class="file-icon">📋</div>
+          <h2>Upload Chest X-Ray</h2>
+          <p>Drag and drop your image or click to browse</p>
+          <div class="file-formats">JPG • PNG • DICOM</div>
+          <input type="file" id="fileInput" name="image" accept="image/*">
+        </div>
+
+        <div class="error-box" id="errorBox"></div>
+
+        <div class="button-group">
+          <button type="submit" class="btn btn-primary" id="analyzeBtn">
+            Analyze Image
+          </button>
+          <button type="reset" class="btn btn-secondary" id="clearBtn">
+            Clear
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="preview-container" id="previewContainer">
+      <div class="preview-label">Image Preview</div>
+      <div class="preview-wrapper">
+        <img id="previewImage" class="preview-image" alt="X-Ray Preview">
+        <button type="button" class="close-preview" id="closePreviewBtn">&times;</button>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn btn-primary" id="analyzeBtn2">
+          Analyze Image
+        </button>
+        <button type="button" class="btn btn-secondary" id="uploadAnotherBtn">
+          Upload Another
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-content" id="modalContent">
+      <button class="modal-close" id="closeModal">&times;</button>
+
+      <div class="loading-state" id="loadingState">
+        <div class="spinner"></div>
+        <div class="loading-text">Analyzing Your X-Ray</div>
+        <div class="loading-subtext">Processing your image...</div>
+      </div>
+
+      <div class="results-state" id="resultsState">
+        <div class="result-icon" id="resultIcon">✓</div>
+        <h2 class="result-title" id="resultTitle">Analyzing...</h2>
+        <div class="result-message" id="resultMessage"></div>
+
+        <div class="confidence-box">
+          <div class="confidence-header">
+            <span>Confidence Level</span>
+            <span id="confidenceValue">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <div class="probability-grid" id="probabilityGrid"></div>
+
+        <div class="timestamp" id="timestamp"></div>
+
+        <div class="result-actions">
+          <button class="btn btn-primary" id="analyzeAnotherBtn">Analyze Another</button>
+          <button class="btn btn-secondary" id="closeResultsBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DOM = {
+      uploadContainer: document.getElementById('uploadContainer'),
+      uploadZone: document.getElementById('uploadZone'),
+      fileInput: document.getElementById('fileInput'),
+      uploadForm: document.getElementById('uploadForm'),
+      errorBox: document.getElementById('errorBox'),
+      previewContainer: document.getElementById('previewContainer'),
+      previewImage: document.getElementById('previewImage'),
+      closePreviewBtn: document.getElementById('closePreviewBtn'),
+      uploadAnotherBtn: document.getElementById('uploadAnotherBtn'),
+      modalBackdrop: document.getElementById('modalBackdrop'),
+      loadingState: document.getElementById('loadingState'),
+      resultsState: document.getElementById('resultsState'),
+      closeModal: document.getElementById('closeModal'),
+      analyzeBtn: document.getElementById('analyzeBtn'),
+      analyzeBtn2: document.getElementById('analyzeBtn2'),
+      clearBtn: document.getElementById('clearBtn'),
+      analyzeAnotherBtn: document.getElementById('analyzeAnotherBtn'),
+      closeResultsBtn: document.getElementById('closeResultsBtn')
+    };
+
+    let selectedFile = null;
+
+    DOM.uploadZone.addEventListener('click', () => DOM.fileInput.click());
+
+    ['dragover', 'dragenter'].forEach(type => {
+      DOM.uploadZone.addEventListener(type, (e) => {
+        e.preventDefault();
+        DOM.uploadZone.classList.add('dragover');
+      });
+    });
+
+    DOM.uploadZone.addEventListener('dragleave', () => {
+      DOM.uploadZone.classList.remove('dragover');
+    });
+
+    DOM.uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      DOM.uploadZone.classList.remove('dragover');
+      DOM.fileInput.files = e.dataTransfer.files;
+      handleFileSelect();
+    });
+
+    DOM.fileInput.addEventListener('change', handleFileSelect);
+
+    function handleFileSelect() {
+      const file = DOM.fileInput.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showError('Please select a valid image file');
+        return;
+      }
+
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        DOM.previewImage.src = e.target.result;
+        DOM.uploadContainer.classList.add('hidden');
+        DOM.previewContainer.classList.add('active');
+        DOM.errorBox.classList.remove('active');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    DOM.uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!selectedFile) {
+        showError('Please select an image');
+        return;
+      }
+
+      // CREATE FormData HERE - THIS WAS MISSING!
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      DOM.previewContainer.classList.remove('active');
+      DOM.modalBackdrop.classList.add('active');
+      DOM.loadingState.classList.add('active');
+      DOM.resultsState.classList.remove('active');
+
+      try {
+        const response = await fetch('/predict', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          displayResults(data);
+        } else {
+          throw new Error(data.error || 'Analysis failed');
+        }
+      } catch (error) {
+        DOM.modalBackdrop.classList.remove('active');
+        DOM.previewContainer.classList.add('active');
+        showError('Error: ' + error.message);
+      }
+    });
+
+    function displayResults(data) {
+      const resultIcon = document.getElementById('resultIcon');
+      const resultTitle = document.getElementById('resultTitle');
+      const resultMessage = document.getElementById('resultMessage');
+      const confidenceValue = document.getElementById('confidenceValue');
+      const progressFill = document.getElementById('progressFill');
+      const probabilityGrid = document.getElementById('probabilityGrid');
+      const timestamp = document.getElementById('timestamp');
+
+      resultIcon.textContent = data.icon;
+      resultIcon.className = `result-icon ${data.color === 'success' ? 'success' : 'alert'}`;
+
+      resultTitle.textContent = data.status;
+      resultTitle.className = `result-title ${data.color === 'success' ? 'success' : 'alert'}`;
+
+      const messageText = data.prediction === 'Normal'
+        ? 'The X-ray analysis shows normal chest findings with no signs of pneumonia. The lungs appear clear and healthy.'
+        : 'Pneumonia detected on the X-ray. Please consult with a healthcare professional for further evaluation and treatment.';
+      resultMessage.textContent = messageText;
+
+      confidenceValue.textContent = data.confidence + '%';
+
+      setTimeout(() => {
+        progressFill.style.width = data.confidence + '%';
+      }, 100);
+
+      probabilityGrid.innerHTML = `
+        <div class="prob-item">
+          <div class="prob-label">Normal</div>
+          <div class="prob-value">${data.probabilities.Normal}%</div>
+        </div>
+        <div class="prob-item">
+          <div class="prob-label">Pneumonia</div>
+          <div class="prob-value">${data.probabilities.Pneumonia}%</div>
+        </div>
+      `;
+
+      timestamp.textContent = `Analysis completed: ${data.timestamp}`;
+
+      DOM.loadingState.classList.remove('active');
+      DOM.resultsState.classList.add('active');
+    }
+
+    function showError(msg) {
+      DOM.errorBox.textContent = msg;
+      DOM.errorBox.classList.add('active');
+    }
+
+    function resetUI() {
+      DOM.uploadContainer.classList.remove('hidden');
+      DOM.previewContainer.classList.remove('active');
+      DOM.modalBackdrop.classList.remove('active');
+      DOM.loadingState.classList.remove('active');
+      DOM.resultsState.classList.remove('active');
+      DOM.uploadForm.reset();
+      selectedFile = null;
+      DOM.previewImage.src = '';
+      DOM.errorBox.classList.remove('active');
+    }
+
+    DOM.closeModal.addEventListener('click', resetUI);
+    DOM.closeResultsBtn.addEventListener('click', resetUI);
+    DOM.analyzeAnotherBtn.addEventListener('click', () => {
+      resetUI();
+      DOM.fileInput.click();
+    });
+    DOM.closePreviewBtn.addEventListener('click', resetUI);
+    DOM.uploadAnotherBtn.addEventListener('click', () => {
+      resetUI();
+      DOM.fileInput.click();
+    });
+    DOM.analyzeBtn2.addEventListener('click', (e) => {
+      e.preventDefault();
+      DOM.uploadForm.dispatchEvent(new Event('submit'));
+    });
+    DOM.clearBtn.addEventListener('click', () => {
+      selectedFile = null;
+      DOM.errorBox.classList.remove('active');
+    });
+  </script>
+</body>
+
+</html>
